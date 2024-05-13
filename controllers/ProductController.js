@@ -27,3 +27,11 @@ const getProductById = async (req, res) => {
 const searchProducts = async (req, res) => {
 
 }
+
+
+module.exports = {
+  createProduct,
+  getAllProducts,
+  getProductById,
+  searchProducts,
+}
