@@ -19,17 +19,21 @@ const productSchema = Schema({
     ref: "Category",
     required: "true",
   },
-  image: {
+  imageUrl: {
     type: String,
     required: true,
   },
   tags: [String],
+  contentRef: {
+    type: String,
+    required: true,
+  },
   sellerId: {
     type: Schema.Types.ObjectId,
     ref: "User",
     required: "true",
   },
-});
+} , {timestamps : true});
 
 const ProductModel = mongoose.model("Product", productSchema);
 

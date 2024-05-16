@@ -1,43 +1,60 @@
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const { default: mongoose } = require("mongoose");
 const User = require("../models/User");
+const bcrypt = require("bcrypt");
 
-const registerUser = async (req, res) => {
+const getAllSellers = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
-    let hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({
-      name: name,
-      email: email,
-      password: hashedPassword,
-      role: role,
-    });
-    await user.save();
-    return res.status(201).json({message:   "Success"});
-  } catch (err) {
-    return res.status(500).json({message: "Server error"});
+    const sellers = await User.find({ role: "seller" });
+    return res.status(200).json({ data: sellers });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+const getAllCustomers = async (req, res) => {
+  try {
+    const customers = await User.find({ role: "customer" });
+    return res.status(200).json({ data: customers });
+  } catch (error) {
+    console.log("err:" + error);
+    return res.status(500).json({ message: "Internal Server Error" , error });
   }
 };
 
-const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user) {
-    return res.status(401).json({message:"Invalid credentials"});
+const getUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Not Found" });
+    }
+    return res.status(200).json({ data: user });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-  let hashedPassword = user.password;
-  let passwordsMatched = await bcrypt.compare(password, hashedPassword);
-  if (!passwordsMatched) {
-    return res.status(401).json({message:"Invalid credentials"});
+};
+
+const updateUser = async (req, res) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ error: "UnAuthorized" });
+    }
+    let hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.findOneAndUpdate(
+      { _id: req.userId },
+      { password: hashedPassword, ...req.body }
+    );
+    if (user) {
+      return res.status(404).json({ message: "Not Found" });
+    }
+    return res.status(200).json({ data: user });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-  const token = jwt.sign(
-    { id: user._id, role: user.role },
-    process.env.JWT_SECRET
-  );
-  return res.status(200).json({ token });
 };
 
 module.exports = {
-  registerUser,
-  loginUser,
+  getUser,
+  updateUser,
+  getAllSellers,
+  getAllCustomers,
 };

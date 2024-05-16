@@ -18,7 +18,7 @@ const orderSchema = Schema({
     type: String,
     enum: ["successfull", "unsuccessful"],
   },
-});
+} , {timestamps : true});
 
 const OrderModel = mongoose.model("Order", orderSchema);
 

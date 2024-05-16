@@ -19,7 +19,7 @@ const userSchema = Schema({
     enum: ["admin", "seller", "customer"],
     default: "customer",
   },
-});
+}, {timestamps : true});
 
 const UserModel = mongoose.model("User", userSchema);
 
