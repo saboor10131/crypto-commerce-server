@@ -10,9 +10,14 @@ const getAllSellers = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-const getAllCustomers = async (req, res) => {
+const getAllUsers = async (req, res) => {
   try {
-    const customers = await User.find({ role: "customer" });
+    const {role} = req.query
+    let queryFilter = {}
+    if (role) {
+      queryFilter.role = role
+    }
+    const customers = await User.find(queryFilter).select("-password").exec();
     return res.status(200).json({ data: customers });
   } catch (error) {
     console.log("err:" + error);
@@ -23,7 +28,7 @@ const getAllCustomers = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).select("-password");
+    const user = await User.findById(id).select("-password").exec();
     if (!user) {
       return res.status(404).json({ message: "Not Found" });
     }
@@ -56,5 +61,5 @@ module.exports = {
   getUser,
   updateUser,
   getAllSellers,
-  getAllCustomers,
+  getAllUsers,
 };

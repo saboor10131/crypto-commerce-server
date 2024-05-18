@@ -2,21 +2,23 @@ const express = require("express");
 const app = express();
 const PORT = 8000;
 const mongoose = require("mongoose");
-const ProductRoutes = require("./routes/ProductRoutes");
-const CategoryRoutes = require("./routes/CategoryRoutes");
-const AuthRoutes = require("./routes/AuthRoutes");
-const UserRoutes = require("./routes/UserRoutes");
+const ProductRouter = require("./routes/ProductRouter");
+const CategoryRouter = require("./routes/CategoryRouter");
+const AuthRouter = require("./routes/AuthRouter");
+const UserRouter = require("./routes/UserRouter");
+const OrderRouter = require("./routes/OrderRouter");
 
 require("dotenv").config();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-//Routes
-app.use("/products", ProductRoutes);
-app.use("/categories", CategoryRoutes);
-app.use("/auth", AuthRoutes);
-app.use("/users", UserRoutes);
+//Router
+app.use("/products", ProductRouter);
+app.use("/categories", CategoryRouter);
+app.use("/auth", AuthRouter);
+app.use("/users", UserRouter);
+app.use("/orders" , OrderRouter)
 
 const connectionUri = process.env.MONGO_CONNECTION_URI;
 mongoose

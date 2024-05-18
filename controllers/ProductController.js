@@ -1,56 +1,19 @@
-const { v4: uuidv4 } = require("uuid");
-const firebaseApp = require("../firebase");
-const {
-  getStorage,
-  ref,
-  uploadString,
-  getDownloadURL,
-} = require("firebase/storage");
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
-const { getFileExtensionFromDataURL } = require("../helpers");
-
-const uploadFile = async (baseUrl, file) => {
-  try {
-    let timestamp = Date.now();
-    let fileExt = getFileExtensionFromDataURL(file);
-    let id = uuidv4();
-    const storage = getStorage(firebaseApp);
-    const storageRef = ref(storage, `${baseUrl}/${timestamp}-${id}.${fileExt}`);
-    const snapshot = await uploadString(storageRef, file, "data_url");
-    return snapshot.ref.fullPath;
-  } catch (error) {
-    throw error;
-  }
-};
-const uploadImage = async (baseUrl, img) => {
-  try {
-    let timestamp = Date.now();
-    let fileExt = getFileExtensionFromDataURL(img);
-    let id = uuidv4();
-    const storage = getStorage(firebaseApp);
-    const storageRef = ref(storage, `${baseUrl}/${timestamp}-${id}.${fileExt}`);
-    const snapshot = await uploadString(storageRef, img, "data_url");
-    const downloadUrl = await getDownloadURL(snapshot.ref);
-    return downloadUrl;
-  } catch (error) {
-    throw error;
-  }
-};
+const DownloadToken = require("../models/DownloadToken");
+const { uploadFile , downloadFile } = require("../utils/cloudStorage");
 
 const createProduct = async (req, res) => {
   try {
-    //upload product (file content)
     if (!req.body.content)
       return res.status(400).json({ message: "Product File is Required" });
     let baseUrlProd = `products/${req.sellerId}`;
     const contentRef = await uploadFile(baseUrlProd, req.body.content);
 
-    //upload product Image
     if (!req.body.image)
       return res.status(400).json({ message: "Product image is required" });
     let baseUrlImg = `images/${req.sellerId}`;
-    const imageUrl = await uploadImage(baseUrlImg, req.body.image);
+    const imageUrl = await uploadFile(baseUrlImg, req.body.image, true);
 
     const product = new Product({
       name: req.body.name,
@@ -259,64 +222,6 @@ const getProductById = async (req, res) => {
   }
 };
 
-const searchSellerProducts = async (req, res) => {
-  if (!req.sellerId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  const { searchQuery } = req.query;
-  console.log(searchQuery);
-  let matchStage = {};
-
-  // Add search query filter if present
-  if (searchQuery) {
-    console.log("got search Query");
-    matchStage = {
-        $or: [
-          { name: { $regex: searchQuery || "", $options: "i" } },
-          { description: { $regex: searchQuery || "", $options: "i" } },
-          { tags: { $regex: searchQuery || "", $options: "i" } },
-          { category: { $regex: searchQuery || "", $options: "i" } },
-        ],
-    };
-  }
-  // const products  = await Product.find({sellerId:req.sellerId})
-  const products = await Product.aggregate([
-    {
-      $match: { sellerId: new mongoose.Types.ObjectId(req.sellerId) },
-    },
-    {
-      $lookup: {
-        from: "categories",
-        localField: "categoryId",
-        foreignField: "_id",
-        as: "category",
-      },
-    },
-    {
-      $unwind: "$category",
-    },
-    {
-      $addFields: {
-        category: "$category.name",
-      },
-    },
-    {
-      $match: matchStage,
-    },
-    {
-      $project: {
-        name: 1,
-        price: 1,
-        description: 1,
-        imageUrl: 1,
-        tags: 1,
-        category: 1,
-      },
-    },
-  ]);
-  return res.status(200).json(products);
-};
-
 const deleteProductById = async (req, res) => {
   try {
     let id = req.params.id;
@@ -341,11 +246,37 @@ const deleteProductById = async (req, res) => {
   }
 };
 
+const donwloadProduct = async (req, res) => {
+  try {
+    const { id, token } = req.params;
+    const downloadToken = await DownloadToken.findOne({ token });
+    if (
+      !downloadToken ||
+      downloadToken.expiresAt < Date.now() ||
+      downloadToken.used
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Invalid, expired, or already used token" });
+    }
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ error: "This file no longer exists" });
+    }
+    await downloadFile(product.contentRef , res , async () =>{
+      await DownloadToken.findOneAndUpdate({token} , {used:true})
+    });
+
+  } catch (error) {
+    return res.status(500).json({ error: "Internal Server" });
+  }
+};
+
 module.exports = {
   createProduct,
   getAllProducts,
-  searchSellerProducts,
   getProductById,
   deleteProductById,
   searchProducts,
+  donwloadProduct,
 };
