@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const DownloadToken = require("../models/DownloadToken");
-const { uploadFile , downloadFile } = require("../utils/cloudStorage");
+const { uploadFile, downloadFile } = require("../utils/cloudStorage");
 
 const createProduct = async (req, res) => {
   try {
@@ -86,6 +86,7 @@ const getAllProducts = async (req, res) => {
 const searchProducts = async (req, res) => {
   try {
     const { categoryId, sellerId, minPrice, maxPrice, searchQuery } = req.query;
+    let { pageNumber, pageSize } = req.query;
     let matchStage = {};
     if (categoryId) {
       matchStage.categoryId = new mongoose.Types.ObjectId(categoryId);
@@ -98,6 +99,13 @@ const searchProducts = async (req, res) => {
     }
     if (maxPrice) {
       matchStage.price.$lte = maxPrice;
+    }
+    pageNumber = pageNumber - 1 || 0;
+    pageSize = pageSize || 10;
+    if (pageSize && pageSize > 50) {
+      return res
+        .status(400)
+        .json({ message: "Page size should be less than 50" });
     }
 
     let aggregatePipline = [
@@ -142,14 +150,35 @@ const searchProducts = async (req, res) => {
         },
       },
       {
+        $facet: {
+          metadata: [{ $count: "totalCount" }],
+          data: [{ $skip: pageNumber }, { $limit: pageSize }],
+        },
+      },
+      {
+        $unwind: "$metadata",
+      },
+      {
         $project: {
-          name: 1,
-          description: 1,
-          category: 1,
-          tags: 1,
-          imageRef: 1,
-          "seller.name": 1,
-          "seller.email": 1,
+          data: {
+            name: 1,
+            description: 1,
+            category: 1,
+            tags: 1,
+            imageRef: 1,
+            "seller.name": 1,
+            "seller.email": 1,
+          },
+          totalCount: "$metadata.totalCount",
+          next: {
+            $cond: {
+              if: {
+                $lt: [{ $add: [pageNumber, pageSize] }, "$metadata.totalCount"],
+              },
+              then: { $literal: "hasNextPage" },
+              else: { $literal: null },
+            },
+          },
         },
       },
     ];
@@ -158,6 +187,7 @@ const searchProducts = async (req, res) => {
 
     return res.status(200).json(products);
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "Internal Server Error", error });
   }
 };
@@ -263,10 +293,9 @@ const donwloadProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({ error: "This file no longer exists" });
     }
-    await downloadFile(product.contentRef , res , async () =>{
-      await DownloadToken.findOneAndUpdate({token} , {used:true})
+    await downloadFile(product.contentRef, res, async () => {
+      await DownloadToken.findOneAndUpdate({ token }, { used: true });
     });
-
   } catch (error) {
     return res.status(500).json({ error: "Internal Server" });
   }
