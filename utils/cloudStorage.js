@@ -26,66 +26,69 @@ const uploadFile = async (baseUrl, dataUrl, public = false) => {
     const filename = `${baseUrl}/${uuidv4()}.${extension}`;
     const file = bucket.file(filename);
 
-    const stream = file.createWriteStream({
-      metadata: {
-        contentType: mimeType,
-      },
-    });
+    return new Promise((resolve, reject) => {
+      const stream = file.createWriteStream({
+        metadata: {
+          contentType: mimeType,
+        },
+      });
 
-    stream.on("error", (err) => {
-      console.error(err);
-      res.status(500).send("Failed to upload file");
-    });
+      stream.on("error", (err) => {
+        reject("Failed to upload file");
+      });
 
-    stream.on("finish", async () => {
-      if (public) {
-        await file.makePublic();
-        contentRef = `https://storage.googleapis.com/${bucket.name}/${filename}`;
-      } else {
-        contentRef = `${bucket.name}/${filename}`;
-      }
-    });
+      stream.on("finish", async () => {
+        try {
+          let contentRef;
+          if (public) {
+            await file.makePublic();
+            contentRef = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+          } else {
+            contentRef = `${bucket.name}/${filename}`;
+          }
+          resolve(contentRef);
+        } catch (err) {
+          reject("Failed to upload file")
+        }
+      });
 
-    stream.end(buffer);
-    return contentRef;
+      stream.end(buffer);
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Failed to upload file");
+    throw new Error("Failed to upload file");
   }
 };
 
-const downloadFile = async (contentRef , res , callback) => {
-    try {
-      const filename = contentRef;
-      const file = bucket.file(filename);
+const downloadFile = async (contentRef, res, callback) => {
+  try {
+    const filename = contentRef;
+    const file = bucket.file(filename);
 
-      const [metadata] = await file.getMetadata();
-      const mimeType = metadata.contentType;
+    const [metadata] = await file.getMetadata();
+    const mimeType = metadata.contentType;
 
-      res.setHeader("Content-Type", mimeType);
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${filename}"`
-      );
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
 
-      const stream = file.createReadStream();
-      stream.on("error", (err) => {
-        console.error(err);
-        res.status(500).send("Failed to download file");
-      });
-
-      stream.on("close" , () => {
-        callback()
-      })
-
-      stream.pipe(res);
-    } catch (error) {
-      console.error(error);
+    const stream = file.createReadStream();
+    stream.on("error", (err) => {
+      console.error(err);
       res.status(500).send("Failed to download file");
-    }
+    });
+
+    stream.on("close", () => {
+      callback();
+    });
+
+    stream.pipe(res);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Failed to download file");
+  }
 };
 
 module.exports = {
   uploadFile,
-  downloadFile
+  downloadFile,
 };

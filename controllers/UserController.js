@@ -12,16 +12,16 @@ const getAllSellers = async (req, res) => {
 };
 const getAllUsers = async (req, res) => {
   try {
-    const {role} = req.query
-    let queryFilter = {}
+    const { role } = req.query;
+    let queryFilter = {};
     if (role) {
-      queryFilter.role = role
+      queryFilter.role = role;
     }
     const customers = await User.find(queryFilter).select("-password").exec();
     return res.status(200).json({ data: customers });
   } catch (error) {
     console.log("err:" + error);
-    return res.status(500).json({ message: "Internal Server Error" , error });
+    return res.status(500).json({ message: "Internal Server Error", error });
   }
 };
 

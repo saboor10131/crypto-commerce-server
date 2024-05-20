@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
 const PORT = 8000;
 const mongoose = require("mongoose");
@@ -10,7 +11,8 @@ const OrderRouter = require("./routes/OrderRouter");
 
 require("dotenv").config();
 
-app.use(express.json());
+app.use(cors())
+app.use(express.json({limit : "50mb"}));
 app.use(express.urlencoded({ extended: true }));
 
 //Router

@@ -13,7 +13,11 @@ const register = async (req, res) => {
       role: role,
     });
     await user.save();
-    return res.status(201).json({ message: "Success" });
+    const token = jwt.sign(
+      { id: user._id, name:user.name, email:user.email, role: user.role  },
+      process.env.JWT_SECRET
+    );
+    return res.status(200).json({ token  , name : user.name , email:user.email, role: user.role });
   } catch (err) {
     return res.status(500).json({ message: "Internal Server error" });
   }
@@ -35,7 +39,7 @@ const login = async (req, res) => {
       { id: user._id, name:user.name, email:user.email, role: user.role  },
       process.env.JWT_SECRET
     );
-    return res.status(200).json({ token  , name : user.name });
+    return res.status(200).json({ token  , name : user.name , email:user.email, role: user.role });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server error" });
   }
