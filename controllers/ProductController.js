@@ -14,8 +14,6 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: "Product image is required" });
     let baseUrlImg = `images/${req.sellerId}`;
     const imageUrl = await uploadFile(baseUrlImg, req.body.image, true);
-    console.log("Content Ref : ",contentRef)
-    console.log("Image Url : ",imageUrl)
     const product = new Product({
       name: req.body.name,
       price: req.body.price,

@@ -215,7 +215,7 @@ const requestDownload = async (req, res) => {
         .json({ message: "You are not authorized to download this order" });
     }
     const token = crypto.randomBytes(20).toString("hex");
-    const expiresAt = Date.now() + 3600; // 1 hour from the time of request
+    const expiresAt = Date.now() + 3600000; // 1 hour from the time of request
     let downloadToken = new DownloadToken({ token, expiresAt, used: false });
     downloadToken.save();
     let html = `${process.env.APP_BASE_URL}/products/download/${productId}/${token}`;

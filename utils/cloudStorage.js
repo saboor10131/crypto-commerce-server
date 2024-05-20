@@ -44,7 +44,7 @@ const uploadFile = async (baseUrl, dataUrl, public = false) => {
             await file.makePublic();
             contentRef = `https://storage.googleapis.com/${bucket.name}/${filename}`;
           } else {
-            contentRef = `${bucket.name}/${filename}`;
+            contentRef = `${filename}`;
           }
           resolve(contentRef);
         } catch (err) {

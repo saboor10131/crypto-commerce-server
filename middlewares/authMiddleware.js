@@ -3,11 +3,9 @@ const jwt = require("jsonwebtoken");
 const validateToken = (token) => {
   return jwt.verify(token, process.env.JWT_SECRET, function (err, userData) {
     if (err) {
-      console.log("if (err)")
       throw new Error(err);
     }
     if (!userData) {
-      console.log("userData")
       throw new Error("Error");
     }
     return userData;
