@@ -231,7 +231,7 @@ const requestDownload = async (req, res) => {
         .json({ message: "Download link is sent via email " });
     } else throw new Error("Failed to send download link");
   } catch (error) {
-    return res.status(500).json({ message: "Internal Serer Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 

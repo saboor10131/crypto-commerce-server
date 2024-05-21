@@ -301,8 +301,35 @@ const donwloadProduct = async (req, res) => {
   }
 };
 
+const updateProduct = async (req , res) => {
+  try {
+    const {id}  = req.params;
+    const {sellerId} = req
+    const product = await Product.findById(id);
+    if( !product) {
+      return res.status(404).json({message: "Invalid product ID"})
+    }
+    if (product.sellerId != sellerId){
+      return res
+       .status(401)
+       .json({ message: "You are not authorized to update this product" });
+    }
+    const updatedProduct = await Product.findByIdAndUpdate(id, {
+      name: req.body.name || product.name,
+      price: req.body.price || product.price,
+      description: req.body.description || product.description,
+      tags: req.body.tags || product.tags,
+      categoryId: req.body.categoryId || product.categoryId,  
+    })
+    return res.status(200).json({data : updatedProduct})
+  } catch (error) {
+    return res.status(500).json({message:"Internal Server Error"})
+  }
+}
+
 module.exports = {
   createProduct,
+  updateProduct,
   getAllProducts,
   getProductById,
   deleteProductById,

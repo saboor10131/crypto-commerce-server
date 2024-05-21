@@ -27,7 +27,7 @@ const authorizeUserOrAdmin = (req, res, next) => {
         .json({ error: "You are not authorized for this request" });
     }
   } catch (error) {
-    return res.status(500).json({ error: "Access denied" });
+    return res.status(401).json({ error: "Access denied" });
   }
 };
 
@@ -43,7 +43,7 @@ const authorizeSeller = (req, res, next) => {
     req.sellerId = data.id;
     next();
   } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(401).json({ error: "Access Denied" });
   }
 };
 const authorizeCustomer = (req, res, next) => {
@@ -58,7 +58,7 @@ const authorizeCustomer = (req, res, next) => {
     req.userId = data.id;
     next();
   } catch (error) {
-    return res.status(500).json({ error: "Access denied" });
+    return res.status(401).json({ error: "Access denied" });
   }
 };
 
@@ -74,7 +74,7 @@ const authorizeAdmin = (req, res, next) => {
     req.adminId = data.id;
     next();
   } catch (error) {
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(401).json({ error: "Access Denied" });
   }
 };
 
@@ -89,7 +89,8 @@ const authenticateUser = (req, res , next) => {
     req.userRole = role;
     next()
   } catch (error) {
-    return res.status(500).json({ error: "Access denied" });
+    console.log(error)
+    return res.status(401).json({ error: "Access denied" });
   }
 };
 
