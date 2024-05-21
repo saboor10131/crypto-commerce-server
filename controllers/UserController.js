@@ -1,5 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const User = require("../models/User");
+const Order = require("../models/Order");
 const bcrypt = require("bcrypt");
 
 const getAllSellers = async (req, res) => {
@@ -22,6 +23,58 @@ const getAllUsers = async (req, res) => {
   } catch (error) {
     console.log("err:" + error);
     return res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+const getCustomers = async (req, res) => {
+  try {
+    const { sellerId } = req;
+    const customers = await Order.aggregate([
+      {
+        $match: {
+          sellerId: new mongoose.Types.ObjectId(sellerId)
+        }
+      },
+      {
+        $group: {
+          _id: "$customerId",
+          totalOrders: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          customerId: "$_id",
+          totalOrders: 1
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "customerId",
+          foreignField: "_id",
+          as: "customer"
+        }
+      },
+      {
+        $unwind: {
+          path: "$customer",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          _id:"$customer._id",
+          name: "$customer.name",
+          email : "$customer.email",
+          createdAt: "$customer.createdAt",
+          updatedAt: "$customer.updatedAt",
+          totalOrders : "$totalOrders"
+        }
+      }
+    ]).exec();
+    return res.status(200).json({ data: customers });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -62,4 +115,5 @@ module.exports = {
   updateUser,
   getAllSellers,
   getAllUsers,
+  getCustomers,
 };

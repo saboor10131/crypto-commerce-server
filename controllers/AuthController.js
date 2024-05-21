@@ -14,10 +14,12 @@ const register = async (req, res) => {
     });
     await user.save();
     const token = jwt.sign(
-      { id: user._id, name:user.name, email:user.email, role: user.role  },
+      { id: user._id, name: user.name, email: user.email, role: user.role },
       process.env.JWT_SECRET
     );
-    return res.status(200).json({ token  , name : user.name , email:user.email, role: user.role });
+    return res
+      .status(200)
+      .json({ token, name: user.name, email: user.email, role: user.role });
   } catch (err) {
     return res.status(500).json({ message: "Internal Server error" });
   }
@@ -36,10 +38,18 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
     const token = jwt.sign(
-      { id: user._id, name:user.name, email:user.email, role: user.role  },
+      { id: user._id, name: user.name, email: user.email, role: user.role },
       process.env.JWT_SECRET
     );
-    return res.status(200).json({ token  , name : user.name , email:user.email, role: user.role });
+    return res
+      .status(200)
+      .json({
+        token,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      });
   } catch (error) {
     return res.status(500).json({ message: "Internal Server error" });
   }
