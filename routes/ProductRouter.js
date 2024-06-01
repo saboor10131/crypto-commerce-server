@@ -8,10 +8,11 @@ const {
   searchProducts,
   donwloadProduct,
   updateProduct,
+  getHomeProducts,
 } = require("../controllers/ProductController");
 const { authorizeSeller } = require("../middlewares/authMiddleware");
 
-router.get("/", getAllProducts);
+router.get("/", getHomeProducts);
 router.get("/search", searchProducts);
 router.get("/:id", getProductById);
 router.get("/download/:id/:token", donwloadProduct);

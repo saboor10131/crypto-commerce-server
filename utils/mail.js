@@ -12,7 +12,7 @@ module.exports.sendEmail = async (
   try {
     let recipient = new Recipient(recipientEmail, recipientName);
     const sender = new Sender(
-      "crypto-commerce@trial-jpzkmgqyzk2l059v.mlsender.net",
+      process.env.MAIL_SENDER_DOMAIN,
       senderName
     );
 

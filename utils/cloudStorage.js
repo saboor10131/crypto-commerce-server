@@ -16,7 +16,7 @@ const uploadFile = async (baseUrl, dataUrl, public = false) => {
     let contentRef;
     const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
     if (!matches) {
-      return res.status(400).send("Invalid file format");
+      throw new Error("Invalid file format");
     }
 
     const mimeType = matches[1];

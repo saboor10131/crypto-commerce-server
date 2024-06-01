@@ -60,11 +60,6 @@ const getAllProducts = async (req, res) => {
         $unwind: "$seller",
       },
       {
-        $addFields: {
-          category: "$category.name",
-        },
-      },
-      {
         $project: {
           name: 1,
           price: 1,
@@ -135,11 +130,6 @@ const searchProducts = async (req, res) => {
         $unwind: "$seller",
       },
       {
-        $addFields: {
-          category: "$category.name",
-        },
-      },
-      {
         $match: {
           $or: [
             { name: { $regex: searchQuery || "", $options: "i" } },
@@ -168,6 +158,7 @@ const searchProducts = async (req, res) => {
             category: 1,
             tags: 1,
             imageUrl: 1,
+            "seller._id": 1,
             "seller.name": 1,
             "seller.email": 1,
           },
@@ -191,6 +182,42 @@ const searchProducts = async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+
+const getHomeProducts = async (req, res) => {
+  try {
+    console.log("getting home products ...")
+    const products = await Product.aggregate([
+      {
+        $lookup: {
+          from: "categories", 
+          localField: "categoryId",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: "$category" },
+      {
+        $group: {
+          _id: "$category._id",
+          category: { $first: "$category" },
+          products: { $push: "$$ROOT" },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          category: 1,
+          products: { $slice: ["$products", 5] },
+        },
+      },
+    ]);
+
+    return res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products grouped by category:", error);
+    throw error;
   }
 };
 
@@ -227,11 +254,6 @@ const getProductById = async (req, res) => {
         $unwind: "$seller",
       },
       {
-        $addFields: {
-          category: "$category.name",
-        },
-      },
-      {
         $project: {
           name: 1,
           price: 1,
@@ -239,8 +261,10 @@ const getProductById = async (req, res) => {
           imageUrl: 1,
           tags: 1,
           category: 1,
+          "seller._id": 1,
           "seller.name": 1,
           "seller.email": 1,
+          "seller.accountId": 1,
         },
       },
     ]);
@@ -257,11 +281,12 @@ const getProductById = async (req, res) => {
 const deleteProductById = async (req, res) => {
   try {
     let id = req.params.id;
+    console.log(id);
     let sellerId = req.sellerId;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid product ID" });
     }
-    const product = await Product.findById(productId);
+    const product = await Product.findById(id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -303,31 +328,40 @@ const donwloadProduct = async (req, res) => {
   }
 };
 
-const updateProduct = async (req , res) => {
+const updateProduct = async (req, res) => {
   try {
-    const {id}  = req.params;
-    const {sellerId} = req
+    const { id } = req.params;
+    const { sellerId } = req;
     const product = await Product.findById(id);
-    if( !product) {
-      return res.status(404).json({message: "Invalid product ID"})
+    let imageUrl = null;
+    try {
+      let baseUrlProd = `images/${req.sellerId}`;
+      imageUrl = await uploadFile(baseUrlProd, req.body.image, true);
+    } catch (err) {
+      console.log(err);
     }
-    if (product.sellerId != sellerId){
+    if (!product) {
+      return res.status(404).json({ message: "Invalid product ID" });
+    }
+    if (product.sellerId != sellerId) {
       return res
-       .status(401)
-       .json({ message: "You are not authorized to update this product" });
+        .status(401)
+        .json({ message: "You are not authorized to update this product" });
     }
     const updatedProduct = await Product.findByIdAndUpdate(id, {
       name: req.body.name || product.name,
       price: req.body.price || product.price,
       description: req.body.description || product.description,
       tags: req.body.tags || product.tags,
-      categoryId: req.body.categoryId || product.categoryId,  
-    })
-    return res.status(200).json({data : updatedProduct})
+      categoryId: req.body.categoryId || product.categoryId,
+      imageUrl: imageUrl || product.imageUrl,
+    });
+    return res.status(200).json({ data: updatedProduct });
   } catch (error) {
-    return res.status(500).json({message:"Internal Server Error"})
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-}
+};
 
 module.exports = {
   createProduct,
@@ -337,4 +371,5 @@ module.exports = {
   deleteProductById,
   searchProducts,
   donwloadProduct,
+  getHomeProducts
 };
