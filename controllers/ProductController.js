@@ -1,19 +1,20 @@
 const mongoose = require("mongoose");
 const Product = require("../models/Product");
 const DownloadToken = require("../models/DownloadToken");
-const { uploadFile, downloadFile } = require("../utils/cloudStorage");
+const FirebaseStorage = require("../utils/firebaseStorage");
 
 const createProduct = async (req, res) => {
   try {
+    let storage = new FirebaseStorage()
     if (!req.body.content)
       return res.status(400).json({ message: "Product File is Required" });
     let baseUrlProd = `products/${req.sellerId}`;
-    const contentRef = await uploadFile(baseUrlProd, req.body.content);
+    const contentRef = await storage.uploadFile(baseUrlProd, req.body.content);
 
     if (!req.body.image)
       return res.status(400).json({ message: "Product image is required" });
     let baseUrlImg = `images/${req.sellerId}`;
-    const imageUrl = await uploadFile(baseUrlImg, req.body.image, true);
+    const imageUrl = await  storage.uploadFile(baseUrlImg, req.body.image, true);
     const product = new Product({
       name: req.body.name,
       price: req.body.price,
@@ -305,6 +306,7 @@ const deleteProductById = async (req, res) => {
 
 const donwloadProduct = async (req, res) => {
   try {
+    let storage = new FirebaseStorage()
     const { id, token } = req.params;
     const downloadToken = await DownloadToken.findOne({ token });
     if (
@@ -320,7 +322,7 @@ const donwloadProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({ error: "This file no longer exists" });
     }
-    await downloadFile(product.contentRef, res, async () => {
+    await storage.downloadFile(product.contentRef, res, async () => {
       await DownloadToken.findOneAndUpdate({ token }, { used: true });
     });
   } catch (error) {
