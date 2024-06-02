@@ -1,4 +1,3 @@
-const express = require("express");
 require("dotenv").config();
 
 const { MailerSend, EmailParams, Sender, Recipient } = require("mailersend");
